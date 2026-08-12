@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  db_test:
+    image: timescale/timescaledb:latest-pg16
+    container_name: cfd_timescaledb_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cfd_system_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescale_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    image: redis:7-alpine
+    container_name: cfd_redis_test
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+
+volumes:
+  timescale_test_data:
