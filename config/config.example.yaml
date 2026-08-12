@@ -1,0 +1,65 @@
+mt5:
+  login: 41207839
+  server: "Deriv-Demo"
+
+symbols:
+  - "EURUSD"
+  - "GBPUSD"
+  - "USDCHF"
+  - "USDJPY"
+  - "XAUUSD"
+  - "BTCUSD"
+
+symbol_groups:
+  usd_pairs: ["EURUSD", "GBPUSD", "USDCHF", "USDJPY"]
+  safe_haven: ["XAUUSD", "USDCHF", "USDJPY"]
+  risk_on: ["BTCUSD", "GBPUSD"]
+
+timeframes:
+  - "M5"
+  - "M15"
+  - "H1"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  dbname: "cfd_system"
+
+risk:
+  starting_balance: 10000.0
+  max_kelly_fraction: 0.25
+  max_risk_per_trade_pct: 1.0
+  atr_multiplier_sl: 1.5
+  atr_multiplier_tp: 2.5
+  max_daily_drawdown_pct: 5.0
+  max_weekly_drawdown_pct: 10.0
+  var_confidence: 0.95
+  var_horizon_days: 1
+  max_portfolio_var_pct: 3.0
+  max_correlation_exposure: 0.7
+
+engine:
+  ema_fast: 9
+  ema_slow: 21
+  rsi_period: 14
+  atr_period: 14
+  bb_period: 20
+  bb_std: 2.0
+  adwin_delta: 0.002
+  min_signal_score: 65
+  correlation_window: 100
+
+calendar:
+  high_impact_pause_minutes_before: 15
+  high_impact_pause_minutes_after: 15
+
+telegram:
+  bot_token: "SEU_TOKEN_AQUI"
+  chat_id: "SEU_CHAT_ID_AQUI"
+
+gui:
+  host: "0.0.0.0"
+  port: 8080
+  refresh_seconds: 2
