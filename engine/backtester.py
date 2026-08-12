@@ -6,9 +6,20 @@ historico ja coletado no TimescaleDB. Aplica a mesma logica de risco do
 risk_manager.py (Kelly fracionario + stop/take por ATR) e modela custos reais de
 CFD (spread), exigencia do plano institucional antes de qualquer execucao automatica.
 
-Uso:
-    python engine/backtester.py
+Uso (qualquer um dos dois funciona):
+    python -m engine.backtester        # recomendado
+    python engine/backtester.py        # tambem funciona (path-fix abaixo)
 """
+import os
+import sys
+
+# Garante que a raiz do projeto esteja no sys.path mesmo quando o script e
+# executado diretamente (nao como modulo com -m), evitando o erro
+# "ModuleNotFoundError: No module named 'engine'".
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
 import logging
 
 import numpy as np
