@@ -165,11 +165,13 @@ def load_history(
         )
         BATCH = 99_999          # limite interno do MT5
         all_rates = []
+        last_dtype = None       # preserva dtype do ultimo batch valido
         pos = 0
         while True:
             batch = mt5.copy_rates_from_pos(symbol, tf, pos, BATCH)
             if batch is None or len(batch) == 0:
                 break
+            last_dtype = batch.dtype
             # Filtrar apenas o intervalo desejado (timestamps UTC)
             from_ts = date_from.timestamp()
             to_ts   = date_to.timestamp()
@@ -180,12 +182,12 @@ def load_history(
                 break
             pos += BATCH
 
-        if not all_rates:
+        if not all_rates or last_dtype is None:
             log.warning(f"[{symbol} {tf_str}] nenhum candle encontrado no intervalo solicitado.")
             return 0
 
         import numpy as np
-        rates = np.array(all_rates, dtype=batch.dtype)
+        rates = np.array(all_rates, dtype=last_dtype)
 
     n = upsert_candles(engine, symbol, tf_str, rates)
     log.info(f"[{symbol} {tf_str}] {n:,} candles salvos ({date_from.date()} → {date_to.date()})")
