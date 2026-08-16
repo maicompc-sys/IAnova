@@ -4,21 +4,26 @@ engine/backtester.py
 Backtest walk-forward da estrategia sobre o historico coletado no TimescaleDB.
 
 Logica de sinal (indicator_engine):
-  - Regime: EMA 9/21 (divergencia > 0.10% = trend_up/trend_down)
-  - Filtro de forca: ADX >= 25 obrigatorio para sinais de tendencia
-  - Confirmacao de entrada: padrao de vela (engolfo / martelo / shooting star)
-  - RSI 14 e Bollinger 20 como filtros adicionais de score
+- Regime: EMA 9/21 (divergencia > 0.10% = trend_up/trend_down)
+- Filtro de forca: ADX >= 25 obrigatorio para sinais de tendencia
+- Confirmacao de entrada: padrao de vela (engolfo / martelo / shooting star)
+- RSI 14 e Bollinger 20 como filtros adicionais de score
+- Drift (ADWIN): mesmo RegimeDetector do live, penaliza confidence quando ha
+  mudanca de regime detectada, para o backtest refletir fielmente o sistema real
 
 Gestao de risco (simulate):
-  - Stop: ATR x 1.5  |  Take: ATR x 3.0  (R:R ~1:2, break-even ~33% win rate)
-  - Custo de spread modelado na entrada (CFD real)
-  - Kelly fracionario + max 1% de risco por trade
+- Stop: ATR x 1.5 | Take: ATR x 3.0 (R:R ~1:2, break-even ~33% win rate)
+- Custo de spread modelado na entrada (CFD real)
+- Kelly fracionario + max 1% de risco por trade
 
 Score minimo por timeframe (config.yaml):
-  - M5: 65  |  M15: 60  |  H1: 50
+- M5: 65 | M15: 60 | H1: 50
+
+Gate 2 exige amostra minima de trades por fold (min_trades_per_fold) para
+evitar aprovacao por ruido estatistico (ex.: 2 trades "aprovando" um simbolo).
 
 Uso:
-    python -m engine.backtester
+python -m engine.backtester
 """
 import os
 import sys
@@ -36,7 +41,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from engine.indicator_engine import compute_indicators, classify_regime, signal_score
+from engine.indicator_engine import compute_indicators, classify_regime, signal_score, RegimeDetector
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [backtest] %(message)s")
 log = logging.getLogger(__name__)
@@ -64,22 +69,32 @@ def fetch_all_candles(engine, symbol, timeframe) -> pd.DataFrame:
         return pd.read_sql(sql, conn, params={"symbol": symbol, "timeframe": timeframe})
 
 
-def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1") -> pd.DataFrame:
-    """Pura: aplica indicator_engine + classify_regime/signal_score linha a linha
-    e gera uma coluna 'signal' (1=long, -1=short, 0=sem sinal)."""
+def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1",
+                   symbol: str = "GENERIC") -> pd.DataFrame:
+    """Aplica indicator_engine + classify_regime/signal_score linha a linha,
+    usando o mesmo RegimeDetector (ADWIN) do live, para que o backtest reflita
+    fielmente a penalidade de confidence quando ha drift detectado."""
     df = compute_indicators(df, cfg_engine)
-    regimes, confs, scores, signals = [], [], [], []
-    drift_flag = False  # backtest nao usa ADWIN online; foco e na logica de sinal
+    regimes, confs, scores, signals, drift_flags = [], [], [], [], []
+
+    detector = RegimeDetector(delta=cfg_engine.get("adwin_delta", 0.002))
+    detector_key = f"{symbol}:{timeframe}"
 
     min_score_cfg = cfg_engine["min_signal_score"]
     min_score = min_score_cfg.get(timeframe, 50) if isinstance(min_score_cfg, dict) else min_score_cfg
 
     for _, row in df.iterrows():
+        drift_flag = False
+        if pd.notna(row.get("returns")):
+            drift_flag = detector.update(detector_key, float(row["returns"]))
+
         regime, conf = classify_regime(row, drift_flag)
         score = signal_score(row, regime, conf)
+
         regimes.append(regime)
         confs.append(conf)
         scores.append(score)
+        drift_flags.append(drift_flag)
 
         sig = 0
         if score >= min_score:
@@ -93,6 +108,7 @@ def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1") -> 
     df["regime_confidence"] = confs
     df["signal_score"] = scores
     df["signal"] = signals
+    df["drift_detected"] = drift_flags
     return df
 
 
@@ -103,6 +119,10 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
     Simulacao trade a trade, considerando custo de spread (entra contra o preco de entrada,
     reduzindo o EV de cada operacao - sem isso, todo backtest e ilusorio, conforme o plano
     institucional). Retorna metricas + DataFrame de trades para auditoria.
+
+    Correcao: o indice agora avanca para logo apos o fechamento REAL do trade
+    (exit_index), nao um bloco fixo de max_bars_hold - isso evita descartar
+    sinais validos nas barras intermediarias e aumenta a amostra de trades.
     """
     balance = starting_balance
     equity_curve = [balance]
@@ -121,24 +141,25 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
             tp = entry + direction * atr * atr_mult_tp
 
             outcome, exit_price = None, entry
+            exit_index = min(i + max_bars_hold, n - 1)
             for j in range(i + 1, min(i + 1 + max_bars_hold, n)):
                 bar = df.iloc[j]
                 if direction == 1:
                     if bar["low"] <= sl:
-                        outcome, exit_price = "loss", sl
+                        outcome, exit_price, exit_index = "loss", sl, j
                         break
                     if bar["high"] >= tp:
-                        outcome, exit_price = "win", tp
+                        outcome, exit_price, exit_index = "win", tp, j
                         break
                 else:
                     if bar["high"] >= sl:
-                        outcome, exit_price = "loss", sl
+                        outcome, exit_price, exit_index = "loss", sl, j
                         break
                     if bar["low"] <= tp:
-                        outcome, exit_price = "win", tp
+                        outcome, exit_price, exit_index = "win", tp, j
                         break
             if outcome is None:
-                exit_price = df.iloc[min(i + max_bars_hold, n - 1)]["close"]
+                exit_price = df.iloc[exit_index]["close"]
                 outcome = "win" if (exit_price - entry) * direction > 0 else "loss"
 
             pnl_pct = (exit_price - entry) / entry * direction
@@ -150,7 +171,7 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
                 "time": row["time"], "direction": "BUY" if direction == 1 else "SELL",
                 "outcome": outcome, "pnl": pnl_amount, "score": row["signal_score"],
             })
-            i += max_bars_hold
+            i = exit_index + 1
         else:
             i += 1
 
@@ -167,8 +188,11 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
     profit_factor = (gross_win / gross_loss) if gross_loss > 0 else float("inf") if gross_win > 0 else 0.0
 
     returns = eq.pct_change().dropna()
-    if returns.std() > 1e-10:
-        sharpe = float(np.clip(returns.mean() / returns.std() * np.sqrt(252), -999, 999))
+    n_trades_period = len(trades_df)
+    if returns.std() > 1e-10 and n_trades_period > 1 and not trades_df.empty:
+        span_days = (df["time"].iloc[-1] - df["time"].iloc[0]).total_seconds() / 86400
+        trades_per_year = n_trades_period / span_days * 365 if span_days > 0 else n_trades_period
+        sharpe = float(np.clip(returns.mean() / returns.std() * np.sqrt(trades_per_year), -999, 999))
     else:
         sharpe = 0.0
 
@@ -195,20 +219,32 @@ def walk_forward_split(df: pd.DataFrame, n_splits: int = 3):
         yield df.iloc[:train_end], df.iloc[train_end:test_end]
 
 
-def evaluate_gate2(results: list) -> dict:
-    """Aplica os criterios objetivos do Gate 2 do plano institucional."""
+def evaluate_gate2(results: list, min_trades_per_fold: int = 30) -> dict:
+    """Aplica os criterios objetivos do Gate 2 do plano institucional.
+
+    Exige amostra minima de trades por fold antes de considerar o resultado
+    valido - sem isso, folds com 1-2 trades podem "aprovar" por puro ruido
+    estatistico (bug identificado quando USDJPY H1 aprovou com apenas 2 trades).
+    """
     if not results:
         return {"passed": False, "reason": "Sem resultados suficientes."}
 
-    profit_factors = [r["profit_factor"] for r in results if r["profit_factor"] not in (0.0, float("inf"))]
-    max_dds = [r["max_drawdown_pct"] for r in results]
-    sharpes = [r["sharpe_ratio"] for r in results]
+    valid_results = [r for r in results if r["n_trades"] >= min_trades_per_fold]
+    if len(valid_results) < len(results):
+        log.info(f"Descartados {len(results) - len(valid_results)} folds com menos de {min_trades_per_fold} trades.")
+    if not valid_results:
+        return {"passed": False, "reason": f"Nenhum fold com >= {min_trades_per_fold} trades."}
+
+    profit_factors = [r["profit_factor"] for r in valid_results if r["profit_factor"] not in (0.0, float("inf"))]
+    max_dds = [r["max_drawdown_pct"] for r in valid_results]
+    sharpes = [r["sharpe_ratio"] for r in valid_results]
 
     checks = {
         "profit_factor_ok": all(pf > 1.3 for pf in profit_factors) if profit_factors else False,
         "max_drawdown_ok": all(dd < 15.0 for dd in max_dds),
-        "sharpe_ok": any(s > 0.8 for s in sharpes),
+        "sharpe_ok": all(s > 0.8 for s in sharpes) if sharpes else False,
         "no_catastrophic_loss": all(dd < 30.0 for dd in max_dds),
+        "min_sample_ok": len(valid_results) == len(results),
     }
     passed = all(checks.values())
     return {"passed": passed, "checks": checks}
@@ -226,7 +262,7 @@ def main():
                 log.info(f"[{symbol} {timeframe}] historico insuficiente ({len(df)} candles) - colete mais dados.")
                 continue
 
-            df = build_signals(df, cfg["engine"], timeframe)
+            df = build_signals(df, cfg["engine"], timeframe, symbol=symbol)
 
             fold_results = []
             for train_df, test_df in walk_forward_split(df, n_splits=3):
@@ -245,7 +281,7 @@ def main():
                          f"Sharpe={result['sharpe_ratio']} max_dd={result['max_drawdown_pct']}%")
 
             if fold_results:
-                gate2 = evaluate_gate2(fold_results)
+                gate2 = evaluate_gate2(fold_results, min_trades_per_fold=30)
                 status = "APROVADO" if gate2["passed"] else "REPROVADO"
                 log.info(f"[{symbol} {timeframe}] Gate 2: {status} - {gate2.get('checks', gate2)}")
                 all_results.append({"symbol": symbol, "timeframe": timeframe, "gate2": gate2})

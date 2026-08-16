@@ -1,0 +1,142 @@
+================================================================================
+IAnova — Saída do Backtester (python -m engine.backtester)
+Data/hora: 2026-08-16 12:05–12:06 (horário local)
+================================================================================
+
+--- EURUSD M5 ---
+[EURUSD M5] fold: trades=0  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=0.0%
+[EURUSD M5] fold: trades=1  win_rate=100.00% PF=inf  Sharpe=0.0   max_dd=0.0%
+[EURUSD M5] fold: trades=0  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=0.0%
+Descartados 3 folds com menos de 30 trades.
+[EURUSD M5] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- EURUSD M15 ---
+[EURUSD M15] fold: trades=6  win_rate=50.00%  PF=2.11  Sharpe=1.58   max_dd=1.81%
+[EURUSD M15] fold: trades=13 win_rate=30.77%  PF=0.51  Sharpe=-2.10  max_dd=5.85%
+[EURUSD M15] fold: trades=5  win_rate=20.00%  PF=0.38  Sharpe=-1.88  max_dd=3.34%
+Descartados 3 folds com menos de 30 trades.
+[EURUSD M15] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- EURUSD H1 ---
+[EURUSD H1] fold: trades=16 win_rate=12.50%  PF=0.30  Sharpe=-4.38  max_dd=8.83%
+[EURUSD H1] fold: trades=27 win_rate=33.33%  PF=1.03  Sharpe=0.21   max_dd=8.68%
+[EURUSD H1] fold: trades=13 win_rate=30.77%  PF=1.07  Sharpe=0.26   max_dd=3.11%
+Descartados 3 folds com menos de 30 trades.
+[EURUSD H1] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- GBPUSD M5 ---
+[GBPUSD M5] fold: trades=0  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=0.0%
+[GBPUSD M5] fold: trades=2  win_rate=50.00%  PF=1.76 Sharpe=0.57  max_dd=1.0%
+[GBPUSD M5] fold: trades=1  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=0.47%
+Descartados 3 folds com menos de 30 trades.
+[GBPUSD M5] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- GBPUSD M15 ---
+[GBPUSD M15] fold: trades=6  win_rate=50.00%  PF=1.96  Sharpe=1.46   max_dd=1.0%
+[GBPUSD M15] fold: trades=17 win_rate=35.29%  PF=0.86  Sharpe=-0.51  max_dd=5.85%
+[GBPUSD M15] fold: trades=8  win_rate=25.00%  PF=0.41  Sharpe=-2.01  max_dd=3.94%
+Descartados 3 folds com menos de 30 trades.
+[GBPUSD M15] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- GBPUSD H1 ---
+[GBPUSD H1] fold: trades=24 win_rate=29.17%  PF=0.75  Sharpe=-1.16  max_dd=4.99%
+[GBPUSD H1] fold: trades=35 win_rate=31.43%  PF=0.74  Sharpe=-1.57  max_dd=7.59%
+[GBPUSD H1] fold: trades=19 win_rate=31.58%  PF=0.97  Sharpe=-0.05  max_dd=3.06%
+Descartados 2 folds com menos de 30 trades.
+[GBPUSD H1] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': True, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': False}
+
+--- USDCHF M5 ---
+[USDCHF M5] fold: trades=3  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=2.97%
+[USDCHF M5] fold: trades=1  win_rate=0.00%   PF=0.0  Sharpe=0.0   max_dd=1.0%
+[USDCHF M5] fold: trades=4  win_rate=75.00%  PF=3.16 Sharpe=1.98  max_dd=1.0%
+Descartados 3 folds com menos de 30 trades.
+[USDCHF M5] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- USDCHF M15 ---
+[USDCHF M15] fold: trades=14 win_rate=35.71%  PF=0.68  Sharpe=-1.15  max_dd=4.52%
+[USDCHF M15] fold: trades=13 win_rate=46.15%  PF=1.20  Sharpe=0.60   max_dd=4.73%
+[USDCHF M15] fold: trades=12 win_rate=25.00%  PF=0.33  Sharpe=-3.41  max_dd=7.51%
+Descartados 3 folds com menos de 30 trades.
+[USDCHF M15] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- USDCHF H1 ---
+[USDCHF H1] fold: trades=28 win_rate=21.43%  PF=0.55  Sharpe=-2.75  max_dd=8.70%
+[USDCHF H1] fold: trades=32 win_rate=40.62%  PF=0.94  Sharpe=-0.21  max_dd=4.89%
+[USDCHF H1] fold: trades=27 win_rate=29.63%  PF=0.64  Sharpe=-2.14  max_dd=8.89%
+Descartados 2 folds com menos de 30 trades.
+[USDCHF H1] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': True, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': False}
+
+--- USDJPY M5 ---
+[USDJPY M5] fold: trades=1  win_rate=0.00%   PF=0.0  Sharpe=0.0    max_dd=1.0%
+[USDJPY M5] fold: trades=5  win_rate=20.00%  PF=0.5  Sharpe=-1.34  max_dd=2.97%
+[USDJPY M5] fold: trades=7  win_rate=14.29%  PF=0.04 Sharpe=-7.96  max_dd=4.79%
+Descartados 3 folds com menos de 30 trades.
+[USDJPY M5] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- USDJPY M15 ---
+[USDJPY M15] fold: trades=18 win_rate=44.44%  PF=1.31  Sharpe=1.09   max_dd=5.87%
+[USDJPY M15] fold: trades=11 win_rate=36.36%  PF=0.78  Sharpe=-0.67  max_dd=2.97%
+[USDJPY M15] fold: trades=12 win_rate=41.67%  PF=1.23  Sharpe=0.67   max_dd=2.71%
+Descartados 3 folds com menos de 30 trades.
+[USDJPY M15] Gate 2: REPROVADO - {'passed': False, 'reason': 'Nenhum fold com >= 30 trades.'}
+
+--- USDJPY H1 ---
+[USDJPY H1] fold: trades=43 win_rate=41.86%  PF=1.28  Sharpe=1.53   max_dd=8.49%
+[USDJPY H1] fold: trades=23 win_rate=8.70%   PF=0.13  Sharpe=-10.7  max_dd=17.79%
+[USDJPY H1] fold: trades=14 win_rate=28.57%  PF=0.79  Sharpe=-0.77  max_dd=5.85%
+Descartados 2 folds com menos de 30 trades.
+[USDJPY H1] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': True, 'sharpe_ok': True, 'no_catastrophic_loss': True, 'min_sample_ok': False}
+
+--- XAUUSD M5 ---
+[XAUUSD M5] fold: trades=144 win_rate=38.89%  PF=1.00  Sharpe=0.13  max_dd=16.02%
+[XAUUSD M5] fold: trades=185 win_rate=38.92%  PF=1.06  Sharpe=0.91  max_dd=19.07%
+[XAUUSD M5] fold: trades=135 win_rate=36.30%  PF=1.02  Sharpe=0.37  max_dd=15.26%
+[XAUUSD M5] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': False, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': True}
+
+--- XAUUSD M15 ---
+[XAUUSD M15] fold: trades=149 win_rate=40.27%  PF=1.10  Sharpe=1.12   max_dd=14.60%
+[XAUUSD M15] fold: trades=163 win_rate=36.20%  PF=0.95  Sharpe=-0.42  max_dd=18.70%
+[XAUUSD M15] fold: trades=162 win_rate=36.42%  PF=1.00  Sharpe=0.22   max_dd=14.83%
+[XAUUSD M15] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': False, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': True}
+
+--- XAUUSD H1 ---
+[XAUUSD H1] fold: trades=66  win_rate=37.88%  PF=1.06  Sharpe=0.56  max_dd=6.42%
+[XAUUSD H1] fold: trades=66  win_rate=39.39%  PF=1.05  Sharpe=0.45  max_dd=9.03%
+[XAUUSD H1] fold: trades=62  win_rate=46.77%  PF=1.60  Sharpe=3.67  max_dd=5.01%
+[XAUUSD H1] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': True, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': True}
+
+--- BTCUSD M5 ---
+[BTCUSD M5] fold: trades=339 win_rate=35.99%  PF=0.86  Sharpe=-2.22  max_dd=29.18%
+[BTCUSD M5] fold: trades=376 win_rate=36.44%  PF=0.99  Sharpe=0.10   max_dd=28.00%
+[BTCUSD M5] fold: trades=290 win_rate=36.21%  PF=0.94  Sharpe=-0.82  max_dd=28.57%
+[BTCUSD M5] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': False, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': True}
+
+--- BTCUSD M15 ---
+[BTCUSD M15] fold: trades=258 win_rate=34.50%  PF=0.92  Sharpe=-1.00  max_dd=33.83%
+[BTCUSD M15] fold: trades=297 win_rate=36.36%  PF=0.88  Sharpe=-1.78  max_dd=25.05%
+[BTCUSD M15] fold: trades=219 win_rate=35.16%  PF=0.96  Sharpe=-0.44  max_dd=22.53%
+[BTCUSD M15] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': False, 'sharpe_ok': False, 'no_catastrophic_loss': False, 'min_sample_ok': True}
+
+--- BTCUSD H1 ---
+[BTCUSD H1] fold: trades=96  win_rate=35.42%  PF=0.90  Sharpe=-0.78  max_dd=17.67%
+[BTCUSD H1] fold: trades=106 win_rate=35.85%  PF=1.07  Sharpe=0.80   max_dd=12.10%
+[BTCUSD H1] fold: trades=82  win_rate=37.80%  PF=0.97  Sharpe=-0.15  max_dd=16.98%
+[BTCUSD H1] Gate 2: REPROVADO - {'profit_factor_ok': False, 'max_drawdown_ok': False, 'sharpe_ok': False, 'no_catastrophic_loss': True, 'min_sample_ok': True}
+
+================================================================================
+Backtest concluido para todos os simbolos/timeframes com dados suficientes.
+================================================================================
+
+RESUMO GERAL
+--------------------------------------------------------------------------------
+Total de combinações testadas : 18 (6 símbolos × 3 timeframes)
+Aprovadas no Gate 2           : 0
+Reprovadas                    : 18
+
+Motivos de reprovação:
+  - Amostra insuficiente (<30 trades/fold)  : 12 combinações  (Forex M5/M15/H1)
+  - PF < 1.3                                : 18 combinações
+  - Sharpe < 0.8 (inconsistente)            : 15 combinações
+  - Max DD >= 15%                           : 8  combinações
+  - no_catastrophic_loss falhou (DD>30%)    : 1  combinação    (BTCUSD M15)
+================================================================================
