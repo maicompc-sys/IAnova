@@ -95,13 +95,13 @@ def classify_regime(row: pd.Series, drift_flag: bool) -> tuple:
     if pd.isna(row["ema_fast"]) or pd.isna(row["ema_slow"]):
         return "range", 50.0
     ema_diff_pct = (row["ema_fast"] - row["ema_slow"]) / row["ema_slow"] * 100
-    if ema_diff_pct > 0.05:
+    if ema_diff_pct > 0.10:
         regime = "trend_up"
-    elif ema_diff_pct < -0.05:
+    elif ema_diff_pct < -0.10:
         regime = "trend_down"
     else:
         regime = "range"
-    confidence = min(100.0, abs(ema_diff_pct) * 200)
+    confidence = min(100.0, abs(ema_diff_pct) * 400)
     if drift_flag:
         confidence = max(0.0, confidence - 20)
     return regime, round(confidence, 2)
@@ -171,7 +171,7 @@ def persist_indicators(engine, symbol, timeframe, row, regime, regime_confidence
             "ema_fast": _safe(row["ema_fast"]), "ema_slow": _safe(row["ema_slow"]),
             "rsi": _safe(row["rsi"]), "atr": _safe(row["atr"]),
             "bb_upper": _safe(row.get("bb_upper")), "bb_lower": _safe(row.get("bb_lower")),
-            "regime": regime, "regime_confidence": regime_confidence, "signal_score": score,
+            "regime": regime, "regime_confidence": float(regime_confidence), "signal_score": float(score),
         })
 
 
@@ -196,7 +196,9 @@ def run_once(cfg, engine, detector):
             regime, regime_conf = classify_regime(last, drift_flag)
             score = signal_score(last, regime, regime_conf)
             persist_indicators(engine, symbol, timeframe, last, regime, regime_conf, score)
-            if score >= cfg["engine"]["min_signal_score"] and regime != "range":
+            min_score_cfg = cfg["engine"]["min_signal_score"]
+            min_score = min_score_cfg.get(timeframe, 50) if isinstance(min_score_cfg, dict) else min_score_cfg
+            if score >= min_score and regime != "range":
                 direction = "BUY" if regime == "trend_up" else "SELL"
                 persist_signal(engine, symbol, direction, score, last)
                 log.info(f"[SINAL] {symbol} {timeframe} {direction} score={score} regime={regime}")

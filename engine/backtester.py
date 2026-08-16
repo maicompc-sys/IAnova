@@ -54,12 +54,15 @@ def fetch_all_candles(engine, symbol, timeframe) -> pd.DataFrame:
         return pd.read_sql(sql, conn, params={"symbol": symbol, "timeframe": timeframe})
 
 
-def build_signals(df: pd.DataFrame, cfg_engine: dict) -> pd.DataFrame:
+def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1") -> pd.DataFrame:
     """Pura: aplica indicator_engine + classify_regime/signal_score linha a linha
     e gera uma coluna 'signal' (1=long, -1=short, 0=sem sinal)."""
     df = compute_indicators(df, cfg_engine)
     regimes, confs, scores, signals = [], [], [], []
     drift_flag = False  # backtest nao usa ADWIN online; foco e na logica de sinal
+
+    min_score_cfg = cfg_engine["min_signal_score"]
+    min_score = min_score_cfg.get(timeframe, 50) if isinstance(min_score_cfg, dict) else min_score_cfg
 
     for _, row in df.iterrows():
         regime, conf = classify_regime(row, drift_flag)
@@ -69,7 +72,7 @@ def build_signals(df: pd.DataFrame, cfg_engine: dict) -> pd.DataFrame:
         scores.append(score)
 
         sig = 0
-        if score >= cfg_engine["min_signal_score"]:
+        if score >= min_score:
             if regime == "trend_up":
                 sig = 1
             elif regime == "trend_down":
@@ -210,7 +213,7 @@ def main():
                 log.info(f"[{symbol} {timeframe}] historico insuficiente ({len(df)} candles) - colete mais dados.")
                 continue
 
-            df = build_signals(df, cfg["engine"])
+            df = build_signals(df, cfg["engine"], timeframe)
 
             fold_results = []
             for train_df, test_df in walk_forward_split(df, n_splits=3):
