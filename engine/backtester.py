@@ -1,14 +1,24 @@
 """
 engine/backtester.py
 
-Backtest vetorizado da estrategia (EMA cross + RSI + Bollinger + regime) sobre o
-historico ja coletado no TimescaleDB. Aplica a mesma logica de risco do
-risk_manager.py (Kelly fracionario + stop/take por ATR) e modela custos reais de
-CFD (spread), exigencia do plano institucional antes de qualquer execucao automatica.
+Backtest walk-forward da estrategia sobre o historico coletado no TimescaleDB.
 
-Uso (qualquer um dos dois funciona):
-    python -m engine.backtester        # recomendado
-    python engine/backtester.py        # tambem funciona (path-fix abaixo)
+Logica de sinal (indicator_engine):
+  - Regime: EMA 9/21 (divergencia > 0.10% = trend_up/trend_down)
+  - Filtro de forca: ADX >= 25 obrigatorio para sinais de tendencia
+  - Confirmacao de entrada: padrao de vela (engolfo / martelo / shooting star)
+  - RSI 14 e Bollinger 20 como filtros adicionais de score
+
+Gestao de risco (simulate):
+  - Stop: ATR x 1.5  |  Take: ATR x 3.0  (R:R ~1:2, break-even ~33% win rate)
+  - Custo de spread modelado na entrada (CFD real)
+  - Kelly fracionario + max 1% de risco por trade
+
+Score minimo por timeframe (config.yaml):
+  - M5: 65  |  M15: 60  |  H1: 50
+
+Uso:
+    python -m engine.backtester
 """
 import os
 import sys
