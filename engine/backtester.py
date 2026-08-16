@@ -157,7 +157,10 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
     profit_factor = (gross_win / gross_loss) if gross_loss > 0 else float("inf") if gross_win > 0 else 0.0
 
     returns = eq.pct_change().dropna()
-    sharpe = (returns.mean() / returns.std() * np.sqrt(252)) if returns.std() > 0 else 0.0
+    if returns.std() > 1e-10:
+        sharpe = float(np.clip(returns.mean() / returns.std() * np.sqrt(252), -999, 999))
+    else:
+        sharpe = 0.0
 
     return {
         "n_trades": len(trades_df),
