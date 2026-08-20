@@ -3,13 +3,14 @@
 Extraido do roadmap institucional (RESUMO_SISTEMA / roteiro das fases).
 Nenhum destes bloqueia o fechamento da Fase 1, mas precisam de dono e prazo.
 
-| Item | Por que importa | Prioridade |
+| Item | Por que importa | Status / Prioridade |
 |---|---|---|
 | Credenciais Telegram | Alertas de sinal/risco nao funcionam sem isso | Alta (rapido) - ver `docs/TELEGRAM_SETUP.md` |
-| Calendario economico com dados reais | Hoje so aceita insercao manual de eventos; falta integracao com API (ForexFactory-based) | Media |
+| Calendario economico & Noticias reais | Insercao manual substituida por API Finnhub (`collector/news_collector.py`) | Concluído (Finnhub) |
 | Monitoramento (Prometheus/Grafana) | Necessario antes da Fase 3 (execucao automatica) para observar producao 24/7 | Media-Alta (antes da Fase 3) |
 | EA MQL5 de execucao | Nao existe ainda -- e o nucleo da Fase 3 (esqueleto inicial em `mql5/IAnova_EA.mq5`) | Alta (quando chegar na Fase 3) |
-| Documentacao de decisoes de parametros | Toda mudanca de threshold deveria ser registrada com justificativa (rastreabilidade) | Baixa, mas recomendado |
+| Documentacao de decisoes de parametros | Toda mudanca de threshold registrada em `docs/DECISOES_PARAMETROS.md` | Concluído (`docs/DECISOES_PARAMETROS.md`) |
+
 
 ## Calendario economico - proximos passos sugeridos
 
