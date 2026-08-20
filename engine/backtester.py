@@ -53,14 +53,21 @@ def load_config(path="config/config.yaml"):
         return yaml.safe_load(f)
 
 
-def get_symbol_risk_params(cfg_risk: dict, symbol: str) -> tuple[float, float, int]:
-    """Retorna (atr_mult_sl, atr_mult_tp, max_bars_hold) especificos para o simbolo,
+def get_symbol_risk_params(cfg_risk: dict, symbol: str, timeframe: str = None) -> tuple[float, float, int]:
+    """Retorna (atr_mult_sl, atr_mult_tp, max_bars_hold) especificos para o simbolo e timeframe,
     com fallback para os parametros globais de risco."""
     sym_cfg = cfg_risk.get("by_symbol", {}).get(symbol, {})
+    if timeframe and isinstance(sym_cfg.get(timeframe), dict):
+        tf_cfg = sym_cfg[timeframe]
+        sl = float(tf_cfg.get("atr_multiplier_sl", sym_cfg.get("atr_multiplier_sl", cfg_risk.get("atr_multiplier_sl", 2.0))))
+        tp = float(tf_cfg.get("atr_multiplier_tp", sym_cfg.get("atr_multiplier_tp", cfg_risk.get("atr_multiplier_tp", 4.0))))
+        max_bars = int(tf_cfg.get("max_bars_hold", sym_cfg.get("max_bars_hold", cfg_risk.get("max_bars_hold", 30))))
+        return sl, tp, max_bars
     sl = float(sym_cfg.get("atr_multiplier_sl", cfg_risk.get("atr_multiplier_sl", 2.0)))
     tp = float(sym_cfg.get("atr_multiplier_tp", cfg_risk.get("atr_multiplier_tp", 4.0)))
     max_bars = int(sym_cfg.get("max_bars_hold", cfg_risk.get("max_bars_hold", 30)))
     return sl, tp, max_bars
+
 
 
 def db_engine(cfg):
@@ -280,16 +287,17 @@ def main():
     timeframes = args.timeframes or cfg["timeframes"]
 
     for symbol in symbols:
-        atr_mult_sl, atr_mult_tp, default_max_bars = get_symbol_risk_params(cfg.get("risk", {}), symbol)
-        max_bars = args.max_bars_hold if args.max_bars_hold is not None else default_max_bars
-
         for timeframe in timeframes:
+            atr_mult_sl, atr_mult_tp, default_max_bars = get_symbol_risk_params(cfg.get("risk", {}), symbol, timeframe)
+            max_bars = args.max_bars_hold if args.max_bars_hold is not None else default_max_bars
+
             df = fetch_all_candles(engine, symbol, timeframe)
             if len(df) < max(cfg["engine"]["bb_period"], cfg["engine"]["ema_slow"]) * 4:
                 log.info(f"[{symbol} {timeframe}] historico insuficiente ({len(df)} candles) - colete mais dados.")
                 continue
 
             df = build_signals(df, cfg["engine"], timeframe, symbol=symbol)
+
 
             fold_results = []
             for train_df, test_df in walk_forward_split(df, n_splits=args.n_splits):

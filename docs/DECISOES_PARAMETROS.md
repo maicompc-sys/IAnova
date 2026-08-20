@@ -40,3 +40,21 @@ Status: Gate 2 reprovado em todos os ativos nesta rodada.
   - H1: Apenas USDCHF atingiu >= 30 trades/fold (34 e 32), mas com PF=0.74 e 0.95. EURUSD, GBPUSD e USDJPY permaneceram < 30 trades/fold.
 - **Decisão Formal:** Comprovado que `min_signal_score` elevado + filtro obrigatório de `ADX >= 25` em 1 ano de dados reais não gera densidade de amostragem estatisticamente válida para o Gate 2 nos pares forex majors. Não afrouxamos os critérios do Gate 2 nem os scores. **Os pares forex majors (EURUSD, GBPUSD, USDCHF, USDJPY) ficam formalmente fora do portfólio inicial** até termos histórico maior (ex.: 2-3 anos) ou um filtro de tendência adaptado e validado em novo ciclo experimental.
 
+## 2026-08-20 - Teste C: atr_tp_multiplier=2.5 em H1 (BTCUSD/XAUUSD)
+- **Contexto:** Teste A (TP=2.0) resolveu timeout mas deixou PF no breakeven (0.92-1.24 em BTCUSD H1).
+- **Hipótese:** R:R levemente acima de 1:1 (TP=2.5, SL=2.0, max_bars=30), focado apenas em H1, melhora o PF sem reintroduzir a perda por timeout do Teste B.
+- **Resultados BTCUSD H1:**
+  - Fold 1 (87 trades): SL=45, TP=32, Timeout=10 | WR=42.53%, PF=0.89, Sharpe=-0.94, MaxDD=8.32%
+  - Fold 2 (100 trades): SL=50, TP=41, Timeout=9 | WR=46.00%, PF=1.04, Sharpe=0.45, MaxDD=6.51%
+  - Fold 3 (77 trades): SL=34, TP=28, Timeout=15 | WR=46.75%, PF=1.04, Sharpe=0.44, MaxDD=10.11%
+- **Resultados XAUUSD H1:**
+  - Fold 1 (66 trades): TP=31, SL=28, Timeout=7 | WR=51.52%, PF=1.34, Sharpe=2.29, MaxDD=3.48% (Aprovado individualmente no fold)
+  - Fold 2 (60 trades): SL=31, TP=20, Timeout=9 | WR=43.33%, PF=0.81, Sharpe=-1.53, MaxDD=9.55%
+  - Fold 3 (67 trades): TP=35, SL=29, Timeout=3 | WR=53.73%, PF=1.50, Sharpe=3.39, MaxDD=4.95% (Aprovado individualmente no fold)
+- **Status:** Gate 2 REPROVADO em ambos (exige aprovação em todos os 3 folds simultaneamente).
+- **Decisão:**
+  1. Em **BTCUSD H1**, o TP=2.5 piorou as métricas em relação ao Teste A (TP=2.0 alcançava PF de até 1.24 e WR de 55.68%).
+  2. Em **XAUUSD H1**, 2 dos 3 folds bateram a meta de PF > 1.3 (1.34 e 1.50 com Sharpe > 2.0), demonstrando que o R:R 2.5 tem edge quando a taxa de acerto é > 51%, mas o Fold 2 (PF=0.81) reprovou o conjunto.
+  3. **Próximo passo:** Seguir para o **Teste D** explorando o eixo de `min_signal_score` específico para H1 (ex: +10 pontos) a fim de filtrar sinais fracos no Fold 2 sem comprimir a amostra abaixo de 30 trades.
+
+
