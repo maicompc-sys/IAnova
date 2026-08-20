@@ -133,16 +133,21 @@ def evaluate_trade(engine, cfg, symbol, entry_price, atr_value, direction, curre
         f = f * 0.5
         log.warning(f"{symbol}: risco de ruina elevado ({mc['ruin_prob']:.2%}), reduzindo Kelly.")
 
+    sym_cfg = risk_cfg.get("by_symbol", {}).get(symbol, {})
+    atr_sl = float(sym_cfg.get("atr_multiplier_sl", risk_cfg.get("atr_multiplier_sl", 2.0)))
+    atr_tp = float(sym_cfg.get("atr_multiplier_tp", risk_cfg.get("atr_multiplier_tp", 4.0)))
+
     risk_amount = current_balance * min(f, risk_cfg["max_risk_per_trade_pct"] / 100)
-    position_size = round(risk_amount / (atr_value * risk_cfg["atr_multiplier_sl"]), 2) if atr_value > 0 else 0.01
+    position_size = round(risk_amount / (atr_value * atr_sl), 2) if atr_value > 0 else 0.01
     position_size = max(0.01, position_size)
 
     if direction == "BUY":
-        stop_loss = entry_price - atr_value * risk_cfg["atr_multiplier_sl"]
-        take_profit = entry_price + atr_value * risk_cfg["atr_multiplier_tp"]
+        stop_loss = entry_price - atr_value * atr_sl
+        take_profit = entry_price + atr_value * atr_tp
     else:
-        stop_loss = entry_price + atr_value * risk_cfg["atr_multiplier_sl"]
-        take_profit = entry_price - atr_value * risk_cfg["atr_multiplier_tp"]
+        stop_loss = entry_price + atr_value * atr_sl
+        take_profit = entry_price - atr_value * atr_tp
+
 
     return RiskDecision(
         approved=True, position_size=position_size,

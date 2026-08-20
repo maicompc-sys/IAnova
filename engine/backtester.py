@@ -35,6 +35,7 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
+import argparse
 import logging
 
 import numpy as np
@@ -50,6 +51,16 @@ log = logging.getLogger(__name__)
 def load_config(path="config/config.yaml"):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def get_symbol_risk_params(cfg_risk: dict, symbol: str) -> tuple[float, float, int]:
+    """Retorna (atr_mult_sl, atr_mult_tp, max_bars_hold) especificos para o simbolo,
+    com fallback para os parametros globais de risco."""
+    sym_cfg = cfg_risk.get("by_symbol", {}).get(symbol, {})
+    sl = float(sym_cfg.get("atr_multiplier_sl", cfg_risk.get("atr_multiplier_sl", 2.0)))
+    tp = float(sym_cfg.get("atr_multiplier_tp", cfg_risk.get("atr_multiplier_tp", 4.0)))
+    max_bars = int(sym_cfg.get("max_bars_hold", cfg_risk.get("max_bars_hold", 30)))
+    return sl, tp, max_bars
 
 
 def db_engine(cfg):
@@ -253,12 +264,26 @@ def evaluate_gate2(results: list, min_trades_per_fold: int = 30) -> dict:
 
 
 def main():
-    cfg = load_config()
+    parser = argparse.ArgumentParser(description="Backtester walk-forward.")
+    parser.add_argument("--symbols", nargs="*", default=None, help="Lista de simbolos a testar")
+    parser.add_argument("--timeframes", nargs="*", default=None, help="Lista de timeframes a testar")
+    parser.add_argument("--n-splits", type=int, default=3, help="Numero de splits walk-forward (padrao: 3)")
+    parser.add_argument("--max-bars-hold", type=int, default=None, help="Sobrescreve max_bars_hold")
+    parser.add_argument("--config", default="config/config.yaml", help="Caminho do config.yaml")
+    args = parser.parse_args()
+
+    cfg = load_config(args.config)
     engine = db_engine(cfg)
     all_results = []
 
-    for symbol in cfg["symbols"]:
-        for timeframe in cfg["timeframes"]:
+    symbols = args.symbols or cfg["symbols"]
+    timeframes = args.timeframes or cfg["timeframes"]
+
+    for symbol in symbols:
+        atr_mult_sl, atr_mult_tp, default_max_bars = get_symbol_risk_params(cfg.get("risk", {}), symbol)
+        max_bars = args.max_bars_hold if args.max_bars_hold is not None else default_max_bars
+
+        for timeframe in timeframes:
             df = fetch_all_candles(engine, symbol, timeframe)
             if len(df) < max(cfg["engine"]["bb_period"], cfg["engine"]["ema_slow"]) * 4:
                 log.info(f"[{symbol} {timeframe}] historico insuficiente ({len(df)} candles) - colete mais dados.")
@@ -267,15 +292,16 @@ def main():
             df = build_signals(df, cfg["engine"], timeframe, symbol=symbol)
 
             fold_results = []
-            for train_df, test_df in walk_forward_split(df, n_splits=3):
+            for train_df, test_df in walk_forward_split(df, n_splits=args.n_splits):
                 if len(test_df) < 20:
                     continue
                 result = simulate(
                     test_df,
-                    atr_mult_sl=cfg["risk"]["atr_multiplier_sl"],
-                    atr_mult_tp=cfg["risk"]["atr_multiplier_tp"],
+                    atr_mult_sl=atr_mult_sl,
+                    atr_mult_tp=atr_mult_tp,
                     starting_balance=cfg["risk"]["starting_balance"],
                     risk_pct=cfg["risk"]["max_risk_per_trade_pct"],
+                    max_bars_hold=max_bars,
                 )
                 fold_results.append(result)
                 log.info(f"[{symbol} {timeframe}] fold: trades={result['n_trades']} "
@@ -287,10 +313,11 @@ def main():
                 gate2 = evaluate_gate2(fold_results, min_trades_per_fold=30)
                 status = "APROVADO" if gate2["passed"] else "REPROVADO"
                 log.info(f"[{symbol} {timeframe}] Gate 2: {status} - {gate2.get('checks', gate2)}")
-                all_results.append({"symbol": symbol, "timeframe": timeframe, "gate2": gate2})
+                all_results.append({"symbol": symbol, "timeframe": timeframe, "gate2": gate2, "folds": fold_results})
 
     log.info("Backtest concluido para todos os simbolos/timeframes com dados suficientes.")
     return all_results
+
 
 
 if __name__ == "__main__":
