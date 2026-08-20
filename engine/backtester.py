@@ -116,13 +116,10 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
              risk_pct: float, avg_spread_pips: float = 1.5, pip_size: float = 0.0001,
              max_bars_hold: int = 30) -> dict:
     """
-    Simulacao trade a trade, considerando custo de spread (entra contra o preco de entrada,
-    reduzindo o EV de cada operacao - sem isso, todo backtest e ilusorio, conforme o plano
-    institucional). Retorna metricas + DataFrame de trades para auditoria.
-
-    Correcao: o indice agora avanca para logo apos o fechamento REAL do trade
-    (exit_index), nao um bloco fixo de max_bars_hold - isso evita descartar
-    sinais validos nas barras intermediarias e aumenta a amostra de trades.
+    Simulacao trade a trade, considerando custo de spread. Agora registra o
+    motivo de saida (sl / tp / timeout) por trade, para diagnosticar se o R:R
+    nominal (atr_mult_tp / atr_mult_sl) esta sendo realmente capturado ou se a
+    maioria das saidas acontece por timeout antes do TP ser atingido.
     """
     balance = starting_balance
     equity_curve = [balance]
@@ -140,27 +137,28 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
             sl = entry - direction * atr * atr_mult_sl
             tp = entry + direction * atr * atr_mult_tp
 
-            outcome, exit_price = None, entry
+            outcome, exit_price, exit_reason = None, entry, "timeout"
             exit_index = min(i + max_bars_hold, n - 1)
             for j in range(i + 1, min(i + 1 + max_bars_hold, n)):
                 bar = df.iloc[j]
                 if direction == 1:
                     if bar["low"] <= sl:
-                        outcome, exit_price, exit_index = "loss", sl, j
+                        outcome, exit_price, exit_index, exit_reason = "loss", sl, j, "sl"
                         break
                     if bar["high"] >= tp:
-                        outcome, exit_price, exit_index = "win", tp, j
+                        outcome, exit_price, exit_index, exit_reason = "win", tp, j, "tp"
                         break
                 else:
                     if bar["high"] >= sl:
-                        outcome, exit_price, exit_index = "loss", sl, j
+                        outcome, exit_price, exit_index, exit_reason = "loss", sl, j, "sl"
                         break
                     if bar["low"] <= tp:
-                        outcome, exit_price, exit_index = "win", tp, j
+                        outcome, exit_price, exit_index, exit_reason = "win", tp, j, "tp"
                         break
             if outcome is None:
                 exit_price = df.iloc[exit_index]["close"]
                 outcome = "win" if (exit_price - entry) * direction > 0 else "loss"
+                exit_reason = "timeout"
 
             pnl_pct = (exit_price - entry) / entry * direction
             risk_amount = balance * (risk_pct / 100)
@@ -170,6 +168,7 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
             trades.append({
                 "time": row["time"], "direction": "BUY" if direction == 1 else "SELL",
                 "outcome": outcome, "pnl": pnl_amount, "score": row["signal_score"],
+                "exit_reason": exit_reason,
             })
             i = exit_index + 1
         else:
@@ -196,6 +195,8 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
     else:
         sharpe = 0.0
 
+    exit_reason_counts = trades_df["exit_reason"].value_counts().to_dict() if not trades_df.empty else {}
+
     return {
         "n_trades": len(trades_df),
         "win_rate": round(float(win_rate), 4),
@@ -204,6 +205,7 @@ def simulate(df: pd.DataFrame, atr_mult_sl: float, atr_mult_tp: float, starting_
         "max_drawdown_pct": round(float(max_dd) * 100, 2) if pd.notna(max_dd) else 0.0,
         "profit_factor": round(float(profit_factor), 2),
         "sharpe_ratio": round(float(sharpe), 2),
+        "exit_reasons": exit_reason_counts,
         "trades": trades_df,
     }
 
@@ -279,6 +281,7 @@ def main():
                 log.info(f"[{symbol} {timeframe}] fold: trades={result['n_trades']} "
                          f"win_rate={result['win_rate']:.2%} PF={result['profit_factor']} "
                          f"Sharpe={result['sharpe_ratio']} max_dd={result['max_drawdown_pct']}%")
+                log.info(f"[{symbol} {timeframe}] exit_reasons={result['exit_reasons']}")
 
             if fold_results:
                 gate2 = evaluate_gate2(fold_results, min_trades_per_fold=30)
