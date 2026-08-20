@@ -1,0 +1,6 @@
+# Dependencias adicionais para a Fase 2 (RL ensemble).
+# Instalar separadamente do requirements.txt principal:
+#   pip install -r requirements-rl.txt
+stable-baselines3>=2.3.0
+gymnasium>=0.29.0
+torch>=2.2.0
