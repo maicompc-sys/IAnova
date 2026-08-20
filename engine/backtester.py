@@ -87,8 +87,26 @@ def fetch_all_candles(engine, symbol, timeframe) -> pd.DataFrame:
         return pd.read_sql(sql, conn, params={"symbol": symbol, "timeframe": timeframe})
 
 
+def get_symbol_min_score(cfg: dict, symbol: str, timeframe: str) -> float:
+    """Retorna min_signal_score especifico para simbolo/timeframe com fallback para engine."""
+    sym_risk = cfg.get("risk", {}).get("by_symbol", {}).get(symbol, {})
+    if isinstance(sym_risk.get(timeframe), dict) and "min_signal_score" in sym_risk[timeframe]:
+        return float(sym_risk[timeframe]["min_signal_score"])
+    if "min_signal_score" in sym_risk:
+        return float(sym_risk["min_signal_score"])
+    sym_engine = cfg.get("engine", {}).get("by_symbol", {}).get(symbol, {})
+    if isinstance(sym_engine.get(timeframe), dict) and "min_signal_score" in sym_engine[timeframe]:
+        return float(sym_engine[timeframe]["min_signal_score"])
+    if "min_signal_score" in sym_engine:
+        return float(sym_engine["min_signal_score"])
+    min_score_cfg = cfg.get("engine", {}).get("min_signal_score", 50)
+    if isinstance(min_score_cfg, dict):
+        return float(min_score_cfg.get(timeframe, 50))
+    return float(min_score_cfg)
+
+
 def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1",
-                   symbol: str = "GENERIC") -> pd.DataFrame:
+                   symbol: str = "GENERIC", min_score: float = None) -> pd.DataFrame:
     """Aplica indicator_engine + classify_regime/signal_score linha a linha,
     usando o mesmo RegimeDetector (ADWIN) do live, para que o backtest reflita
     fielmente a penalidade de confidence quando ha drift detectado."""
@@ -98,8 +116,10 @@ def build_signals(df: pd.DataFrame, cfg_engine: dict, timeframe: str = "H1",
     detector = RegimeDetector(delta=cfg_engine.get("adwin_delta", 0.002))
     detector_key = f"{symbol}:{timeframe}"
 
-    min_score_cfg = cfg_engine["min_signal_score"]
-    min_score = min_score_cfg.get(timeframe, 50) if isinstance(min_score_cfg, dict) else min_score_cfg
+    if min_score is None:
+        min_score_cfg = cfg_engine.get("min_signal_score", 50)
+        min_score = min_score_cfg.get(timeframe, 50) if isinstance(min_score_cfg, dict) else min_score_cfg
+
 
     for _, row in df.iterrows():
         drift_flag = False
@@ -296,7 +316,9 @@ def main():
                 log.info(f"[{symbol} {timeframe}] historico insuficiente ({len(df)} candles) - colete mais dados.")
                 continue
 
-            df = build_signals(df, cfg["engine"], timeframe, symbol=symbol)
+            min_score = get_symbol_min_score(cfg, symbol, timeframe)
+            df = build_signals(df, cfg["engine"], timeframe, symbol=symbol, min_score=min_score)
+
 
 
             fold_results = []

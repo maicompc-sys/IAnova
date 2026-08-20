@@ -57,4 +57,18 @@ Status: Gate 2 reprovado em todos os ativos nesta rodada.
   2. Em **XAUUSD H1**, 2 dos 3 folds bateram a meta de PF > 1.3 (1.34 e 1.50 com Sharpe > 2.0), demonstrando que o R:R 2.5 tem edge quando a taxa de acerto é > 51%, mas o Fold 2 (PF=0.81) reprovou o conjunto.
   3. **Próximo passo:** Seguir para o **Teste D** explorando o eixo de `min_signal_score` específico para H1 (ex: +10 pontos) a fim de filtrar sinais fracos no Fold 2 sem comprimir a amostra abaixo de 30 trades.
 
+## 2026-08-20 - BTCUSD H1 revertido para TP=2.0 (Teste A era otimo)
+Teste C (TP=2.5) piorou BTCUSD H1 (PF max 1.04 vs 1.24 no Teste A). Revertido.
+BTCUSD H1 fica em espera de nova hipotese de ajuste.
+
+## 2026-08-20 - Teste D: min_signal_score=60 em XAUUSD H1
+- **Contexto:** Teste C aprovou 2/3 folds em XAUUSD H1 (PF 1.34 e 1.50), fold 2 reprovou (PF 0.81).
+- **Hipótese:** score mais seletivo (60 vs 50) filtra sinais fracos também no fold 2 sem comprometer os demais.
+- **Resultado:**
+  - Fold 1 (64 trades): TP=30, SL=28, Timeout=6 | WR=51.56%, PF=1.31, Sharpe=2.11, MaxDD=3.94%
+  - Fold 2 (57 trades): SL=30, TP=19, Timeout=8 | WR=42.11%, PF=0.79, Sharpe=-1.69, MaxDD=9.77%
+  - Fold 3 (61 trades): TP=31, SL=27, Timeout=3 | WR=52.46%, PF=1.43, Sharpe=2.86, MaxDD=5.18%
+- **Decisão:** Cenário C (sem melhora no fold 2). Elevar o min_signal_score para 60 não corrigiu o fold 2 (PF caiu de 0.81 para 0.79) e reduziu levemente a performance dos folds 1 e 3. Revertido min_signal_score para 50. XAUUSD H1 permanece com TP=2.5 e score=50 como melhor ponto encontrado.
+
+
 
